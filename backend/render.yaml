@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: meeting-cost-api
+    runtime: python
+    buildCommand: pip install -r backend/requirements.txt
+    startCommand: cd backend && uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DATABASE_URL
+        value: sqlite:///./meetingcost.db
+      - key: ACCESS_TOKEN_EXPIRE_MINUTES
+        value: 480
