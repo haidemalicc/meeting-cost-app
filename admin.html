@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Meeting Cost Calculator — Admin</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#f8fafc;--surface:#fff;--border:#e2e8f0;
+  --primary:#2563eb;--primary-dark:#1d4ed8;--primary-light:#eff6ff;
+  --danger:#dc2626;--danger-light:#fef2f2;
+  --success:#16a34a;--success-light:#f0fdf4;
+  --text:#0f172a;--muted:#64748b;--label:#475569;
+  --sidebar:#0f172a;--sidebar-text:#94a3b8;--sidebar-active:#fff;
+}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);font-size:14px}
+.app{display:flex;min-height:100vh}
+/* Sidebar */
+.sidebar{width:220px;background:var(--sidebar);display:flex;flex-direction:column;flex-shrink:0;position:fixed;top:0;left:0;bottom:0;z-index:10}
+.sidebar-logo{padding:20px 16px;border-bottom:1px solid #1e293b}
+.sidebar-logo .logo-title{color:#fff;font-weight:700;font-size:14px;line-height:1.3}
+.sidebar-logo .logo-sub{color:#475569;font-size:11px;margin-top:2px}
+.sidebar-nav{flex:1;padding:12px 8px}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:6px;color:var(--sidebar-text);cursor:pointer;font-size:13px;font-weight:500;transition:all 0.15s;margin-bottom:2px}
+.nav-item:hover{background:#1e293b;color:#cbd5e1}
+.nav-item.active{background:#1e3a5f;color:var(--sidebar-active)}
+.nav-icon{font-size:15px;width:18px;text-align:center}
+.sidebar-footer{padding:12px 8px;border-top:1px solid #1e293b}
+/* Main */
+.main{margin-left:220px;flex:1;display:flex;flex-direction:column}
+.topbar{background:var(--surface);border-bottom:1px solid var(--border);padding:0 24px;height:56px;display:flex;align-items:center;justify-content:space-between}
+.topbar-title{font-weight:600;font-size:15px}
+.topbar-user{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted)}
+.avatar{width:28px;height:28px;border-radius:50%;background:var(--primary);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:11px}
+.content{padding:24px;flex:1}
+/* Cards */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:20px}
+.card-title{font-weight:600;font-size:14px;margin-bottom:16px;color:var(--text)}
+/* Stats grid */
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:24px}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px}
+.stat-label{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px}
+.stat-value{font-size:24px;font-weight:700;color:var(--text);line-height:1}
+.stat-sub{font-size:11px;color:var(--muted);margin-top:4px}
+.stat-card.blue{border-left:3px solid var(--primary)}
+.stat-card.green{border-left:3px solid var(--success)}
+.stat-card.amber{border-left:3px solid #d97706}
+.stat-card.red{border-left:3px solid var(--danger)}
+/* Table */
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse}
+th{text-align:left;padding:10px 12px;font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;border-bottom:1px solid var(--border)}
+td{padding:11px 12px;border-bottom:1px solid var(--border);font-size:13px;color:var(--text)}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:#f8fafc}
+/* Buttons */
+.btn{padding:8px 14px;border-radius:6px;font-size:13px;font-weight:500;cursor:pointer;border:none;transition:all 0.15s;display:inline-flex;align-items:center;gap:6px}
+.btn-primary{background:var(--primary);color:#fff}
+.btn-primary:hover{background:var(--primary-dark)}
+.btn-ghost{background:transparent;color:var(--muted);border:1px solid var(--border)}
+.btn-ghost:hover{background:var(--bg)}
+.btn-danger{background:var(--danger-light);color:var(--danger);border:1px solid #fca5a5}
+.btn-danger:hover{background:#fee2e2}
+.btn-sm{padding:5px 10px;font-size:12px}
+/* Form */
+.form-group{margin-bottom:14px}
+.form-label{display:block;font-size:12px;font-weight:600;color:var(--label);margin-bottom:5px}
+.form-input{width:100%;padding:8px 11px;border:1px solid var(--border);border-radius:6px;font-size:13px;color:var(--text);outline:none;font-family:inherit}
+.form-input:focus{border-color:var(--primary);box-shadow:0 0 0 3px #bfdbfe}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+/* Modal */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center;z-index:100}
+.modal{background:var(--surface);border-radius:12px;padding:24px;width:460px;max-width:90vw}
+.modal-title{font-weight:700;font-size:16px;margin-bottom:18px}
+.modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:20px}
+/* Badge */
+.badge{padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600}
+.badge-green{background:var(--success-light);color:var(--success)}
+.badge-red{background:var(--danger-light);color:var(--danger)}
+.badge-blue{background:var(--primary-light);color:var(--primary)}
+/* Login */
+.login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--bg)}
+.login-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:36px;width:380px}
+.login-title{font-size:20px;font-weight:700;margin-bottom:4px}
+.login-sub{color:var(--muted);font-size:13px;margin-bottom:24px}
+.error-msg{background:var(--danger-light);color:var(--danger);padding:10px 12px;border-radius:6px;font-size:13px;margin-bottom:14px}
+/* Page header */
+.page-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
+.page-title{font-size:18px;font-weight:700}
+/* Empty state */
+.empty{text-align:center;padding:48px 24px;color:var(--muted)}
+.empty-icon{font-size:36px;margin-bottom:12px}
+.empty-text{font-size:14px}
+/* Ticker display */
+.ticker-demo{background:#0f172a;border-radius:12px;padding:32px;text-align:center;margin-bottom:20px}
+.ticker-label{color:#475569;font-size:12px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:8px}
+.ticker-value{font-size:52px;font-weight:700;color:#22c55e;font-variant-numeric:tabular-nums;letter-spacing:-2px}
+.ticker-sub{color:#475569;font-size:12px;margin-top:8px}
+.ticker-controls{display:flex;gap:10px;justify-content:center;margin-top:16px}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useEffect, useCallback, useRef } = React;
+
+const API = 'http://localhost:8000';
+
+function api(path, opts = {}, token = null) {
+  const headers = { 'Content-Type': 'application/json' };
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  return fetch(API + path, { headers, ...opts }).then(async r => {
+    if (!r.ok) {
+      const err = await r.json().catch(() => ({ detail: 'Request failed' }));
+      throw new Error(err.detail || 'Request failed');
+    }
+    return r.json();
+  });
+}
+
+// ── Login ──────────────────────────────────────────
+function Login({ onLogin }) {
+  const [email, setEmail] = useState('admin@meetingcost.local');
+  const [password, setPassword] = useState('admin1234');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const submit = async () => {
+    setLoading(true); setError('');
+    try {
+      const data = await api('/api/auth/login', {
+        method: 'POST',
+        body: JSON.stringify({ email, password })
+      });
+      onLogin(data);
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="login-wrap">
+      <div className="login-card">
+        <div style={{fontSize:28,marginBottom:12}}>💸</div>
+        <div className="login-title">Meeting Cost Calculator</div>
+        <div className="login-sub">Admin Dashboard — sign in to continue</div>
+        {error && <div className="error-msg">{error}</div>}
+        <div className="form-group">
+          <label className="form-label">Email</label>
+          <input className="form-input" value={email} onChange={e => setEmail(e.target.value)} type="email" />
+        </div>
+        <div className="form-group">
+          <label className="form-label">Password</label>
+          <input className="form-input" value={password} onChange={e => setPassword(e.target.value)} type="password"
+            onKeyDown={e => e.key === 'Enter' && submit()} />
+        </div>
+        <button className="btn btn-primary" style={{width:'100%',justifyContent:'center',padding:'10px'}}
+          onClick={submit} disabled={loading}>
+          {loading ? 'Signing in...' : 'Sign In'}
+        </button>
+        <div style={{marginTop:14,fontSize:12,color:'var(--muted)',textAlign:'center'}}>
+          Default: admin@meetingcost.local / admin1234
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Dashboard ──────────────────────────────────────
+function Dashboard({ token }) {
+  const [stats, setStats] = useState(null);
+  const [meetings, setMeetings] = useState([]);
+
+  useEffect(() => {
+    api('/api/meetings/dashboard', {}, token).then(setStats).catch(() => {});
+    api('/api/meetings/?limit=5', {}, token).then(setMeetings).catch(() => {});
+  }, []);
+
+  const fmt = n => n != null ? `£${Number(n).toLocaleString('en-GB', {minimumFractionDigits:2,maximumFractionDigits:2})}` : '—';
+  const fmtDur = s => s ? `${Math.floor(s/60)}m ${s%60}s` : '—';
+
+  return (
+    <div>
+      <div className="page-header"><div className="page-title">Dashboard</div></div>
+      {stats && (
+        <div className="stats-grid">
+          <div className="stat-card blue">
+            <div className="stat-label">Total Meetings</div>
+            <div className="stat-value">{stats.total_meetings}</div>
+            <div className="stat-sub">{stats.meetings_this_week} this week</div>
+          </div>
+          <div className="stat-card red">
+            <div className="stat-label">Total Cost</div>
+            <div className="stat-value">{fmt(stats.total_cost)}</div>
+            <div className="stat-sub">{fmt(stats.cost_this_week)} this week</div>
+          </div>
+          <div className="stat-card amber">
+            <div className="stat-label">Avg Cost / Meeting</div>
+            <div className="stat-value">{fmt(stats.avg_cost_per_meeting)}</div>
+          </div>
+          <div className="stat-card green">
+            <div className="stat-label">Hours in Meetings</div>
+            <div className="stat-value">{stats.total_hours_spent}h</div>
+          </div>
+        </div>
+      )}
+
+      {/* Live ticker demo */}
+      <div className="card" style={{marginBottom:20}}>
+        <div className="card-title">🎯 Live Ticker — Demo</div>
+        <LiveTicker token={token} />
+      </div>
+
+      {/* Recent meetings */}
+      <div className="card">
+        <div className="card-title">Recent Meetings</div>
+        {meetings.length === 0 ? (
+          <div className="empty"><div className="empty-icon">📅</div><div className="empty-text">No meetings recorded yet</div></div>
+        ) : (
+          <div className="table-wrap">
+            <table>
+              <thead><tr><th>Type</th><th>Title</th><th>Attendees</th><th>Duration</th><th>Cost</th><th>Date</th></tr></thead>
+              <tbody>
+                {meetings.map(m => (
+                  <tr key={m.id}>
+                    <td><span className={`badge ${m.session_type === 'call' ? 'badge-blue' : 'badge-green'}`}>{m.session_type === 'call' ? '📞 Call' : '📅 Meeting'}</span></td>
+                    <td>{m.title || 'Untitled'}</td>
+                    <td>{m.attendee_count || '—'}</td>
+                    <td>{fmtDur(m.duration_seconds)}</td>
+                    <td style={{fontWeight:600,color: m.total_cost > 100 ? 'var(--danger)' : 'var(--success)'}}>{fmt(m.total_cost)}</td>
+                    <td style={{color:'var(--muted)'}}>{new Date(m.started_at).toLocaleDateString('en-GB')}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── Live Ticker Demo ───────────────────────────────
+function LiveTicker({ token }) {
+  const [running, setRunning] = useState(false);
+  const [elapsed, setElapsed] = useState(0);
+  const [ratePerSec, setRatePerSec] = useState(0);
+  const [emails, setEmails] = useState('');
+  const [matched, setMatched] = useState(null);
+  const intervalRef = useRef(null);
+
+  const startTicker = async () => {
+    if (!emails.trim()) return;
+    const list = emails.split(',').map(e => e.trim()).filter(Boolean);
+    try {
+      const data = await api('/api/meetings/calculate', {
+        method: 'POST',
+        body: JSON.stringify({ attendee_emails: list, duration_seconds: 1 })
+      }, token);
+      setRatePerSec(data.total_hourly_rate / 3600);
+      setMatched(data);
+      setElapsed(0);
+      setRunning(true);
+    } catch(e) { alert(e.message); }
+  };
+
+  useEffect(() => {
+    if (running) {
+      intervalRef.current = setInterval(() => setElapsed(e => e + 1), 1000);
+    } else {
+      clearInterval(intervalRef.current);
+    }
+    return () => clearInterval(intervalRef.current);
+  }, [running]);
+
+  const cost = (ratePerSec * elapsed).toFixed(4);
+  const fmt = n => `£${Number(n).toFixed(2)}`;
+
+  return (
+    <div>
+      <div className="ticker-demo">
+        <div className="ticker-label">💰 Meeting Cost</div>
+        <div className="ticker-value">{fmt(cost)}</div>
+        <div className="ticker-sub">
+          {running ? `Running for ${Math.floor(elapsed/60)}m ${elapsed%60}s` : 'Enter attendee emails and press Start'}
+        </div>
+        {matched && (
+          <div style={{marginTop:12,fontSize:12,color:'#475569'}}>
+            {matched.matched_count}/{matched.attendee_count} staff matched · £{(ratePerSec*60).toFixed(2)}/min
+          </div>
+        )}
+      </div>
+      <div style={{marginBottom:12}}>
+        <label className="form-label">Attendee emails (comma separated)</label>
+        <input className="form-input" value={emails} onChange={e => setEmails(e.target.value)}
+          placeholder="alice@company.com, bob@company.com" />
+      </div>
+      <div className="ticker-controls">
+        {!running ? (
+          <button className="btn btn-primary" onClick={startTicker}>▶ Start</button>
+        ) : (
+          <>
+            <button className="btn btn-ghost" onClick={() => setRunning(false)}>⏸ Pause</button>
+            <button className="btn btn-danger" onClick={() => { setRunning(false); setElapsed(0); setMatched(null); }}>⏹ Reset</button>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── Staff Management ───────────────────────────────
+function StaffPage({ token }) {
+  const [staff, setStaff] = useState([]);
+  const [showModal, setShowModal] = useState(false);
+  const [editing, setEditing] = useState(null);
+  const [form, setForm] = useState({ name:'', email:'', department:'', annual_salary:'' });
+  const [saving, setSaving] = useState(false);
+
+  const load = () => api('/api/staff/', {}, token).then(setStaff).catch(() => {});
+  useEffect(() => { load(); }, []);
+
+  const openAdd = () => { setEditing(null); setForm({ name:'', email:'', department:'', annual_salary:'' }); setShowModal(true); };
+  const openEdit = s => { setEditing(s); setForm({ name:s.name, email:s.email, department:s.department||'', annual_salary:s.annual_salary }); setShowModal(true); };
+
+  const save = async () => {
+    setSaving(true);
+    try {
+      if (editing) {
+        await api(`/api/staff/${editing.id}`, { method:'PUT', body: JSON.stringify({ name:form.name, department:form.department, annual_salary:Number(form.annual_salary) }) }, token);
+      } else {
+        await api('/api/staff/', { method:'POST', body: JSON.stringify({ ...form, annual_salary:Number(form.annual_salary) }) }, token);
+      }
+      setShowModal(false); load();
+    } catch(e) { alert(e.message); }
+    finally { setSaving(false); }
+  };
+
+  const deactivate = async id => {
+    if (!confirm('Deactivate this staff member?')) return;
+    await api(`/api/staff/${id}`, { method:'DELETE' }, token);
+    load();
+  };
+
+  const fmt = n => `£${Number(n).toLocaleString()}`;
+  const fmtRate = n => `£${Number(n).toFixed(2)}/hr`;
+
+  return (
+    <div>
+      <div className="page-header">
+        <div className="page-title">Staff & Salaries</div>
+        <button className="btn btn-primary" onClick={openAdd}>+ Add Staff</button>
+      </div>
+      <div className="card">
+        {staff.length === 0 ? (
+          <div className="empty"><div className="empty-icon">👥</div><div className="empty-text">No staff added yet. Add staff to start tracking meeting costs.</div></div>
+        ) : (
+          <div className="table-wrap">
+            <table>
+              <thead><tr><th>Name</th><th>Email</th><th>Department</th><th>Annual Salary</th><th>Hourly Rate</th><th>Status</th><th></th></tr></thead>
+              <tbody>
+                {staff.map(s => (
+                  <tr key={s.id}>
+                    <td style={{fontWeight:500}}>{s.name}</td>
+                    <td style={{color:'var(--muted)'}}>{s.email}</td>
+                    <td>{s.department || '—'}</td>
+                    <td>{fmt(s.annual_salary)}</td>
+                    <td style={{fontWeight:500,color:'var(--primary)'}}>{fmtRate(s.hourly_rate)}</td>
+                    <td><span className={`badge ${s.is_active ? 'badge-green' : 'badge-red'}`}>{s.is_active ? 'Active' : 'Inactive'}</span></td>
+                    <td>
+                      <div style={{display:'flex',gap:6}}>
+                        <button className="btn btn-ghost btn-sm" onClick={() => openEdit(s)}>Edit</button>
+                        {s.is_active && <button className="btn btn-danger btn-sm" onClick={() => deactivate(s.id)}>Remove</button>}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      {showModal && (
+        <div className="modal-overlay" onClick={() => setShowModal(false)}>
+          <div className="modal" onClick={e => e.stopPropagation()}>
+            <div className="modal-title">{editing ? 'Edit Staff Member' : 'Add Staff Member'}</div>
+            <div className="form-row">
+              <div className="form-group">
+                <label className="form-label">Full Name</label>
+                <input className="form-input" value={form.name} onChange={e => setForm(f=>({...f,name:e.target.value}))} />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Email</label>
+                <input className="form-input" value={form.email} onChange={e => setForm(f=>({...f,email:e.target.value}))} disabled={!!editing} />
+              </div>
+            </div>
+            <div className="form-row">
+              <div className="form-group">
+                <label className="form-label">Department</label>
+                <input className="form-input" value={form.department} onChange={e => setForm(f=>({...f,department:e.target.value}))} placeholder="e.g. Engineering" />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Annual Salary (£)</label>
+                <input className="form-input" type="number" value={form.annual_salary} onChange={e => setForm(f=>({...f,annual_salary:e.target.value}))} placeholder="45000" />
+              </div>
+            </div>
+            {form.annual_salary && (
+              <div style={{background:'var(--primary-light)',padding:'8px 12px',borderRadius:6,fontSize:12,color:'var(--primary)',marginBottom:12}}>
+                Hourly rate: £{(Number(form.annual_salary) / 1950).toFixed(2)}/hr
+              </div>
+            )}
+            <div className="modal-actions">
+              <button className="btn btn-ghost" onClick={() => setShowModal(false)}>Cancel</button>
+              <button className="btn btn-primary" onClick={save} disabled={saving}>{saving ? 'Saving...' : 'Save'}</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Meetings History ───────────────────────────────
+function MeetingsPage({ token }) {
+  const [meetings, setMeetings] = useState([]);
+  const [filter, setFilter] = useState('all');
+
+  useEffect(() => {
+    api('/api/meetings/?limit=50', {}, token).then(setMeetings).catch(() => {});
+  }, []);
+
+  const fmt = n => n != null ? `£${Number(n).toFixed(2)}` : '—';
+  const fmtDur = s => {
+    if (!s) return '—';
+    const m = Math.floor(s/60), sec = s%60;
+    return m > 0 ? `${m}m ${sec}s` : `${sec}s`;
+  };
+
+  const filtered = filter === 'all' ? meetings : meetings.filter(m => m.session_type === filter);
+
+  return (
+    <div>
+      <div className="page-header">
+        <div className="page-title">Session History</div>
+        <div style={{display:'flex',gap:6}}>
+          {['all','meeting','call'].map(f => (
+            <button key={f} className={`btn ${filter===f?'btn-primary':'btn-ghost'} btn-sm`} onClick={()=>setFilter(f)}>
+              {f==='all'?'All':f==='meeting'?'📅 Meetings':'📞 Calls'}
+            </button>
+          ))}
+        </div>
+      </div>
+      <div className="card">
+        {filtered.length === 0 ? (
+          <div className="empty"><div className="empty-icon">📅</div><div className="empty-text">No sessions recorded yet</div></div>
+        ) : (
+          <div className="table-wrap">
+            <table>
+              <thead><tr><th>Type</th><th>Title</th><th>Attendees</th><th>Matched</th><th>Duration</th><th>Total Cost</th><th>Date</th></tr></thead>
+              <tbody>
+                {filtered.map(m => (
+                  <tr key={m.id}>
+                    <td><span className={`badge ${m.session_type === 'call' ? 'badge-blue' : 'badge-green'}`}>{m.session_type === 'call' ? '📞 Call' : '📅 Meeting'}</span></td>
+                    <td style={{fontWeight:500}}>{m.title || 'Untitled'}</td>
+                    <td>{m.attendee_count ?? '—'}</td>
+                    <td>
+                      {m.matched_count != null && m.attendee_count != null ? (
+                        <span className={`badge ${m.matched_count === m.attendee_count ? 'badge-green' : 'badge-blue'}`}>
+                          {m.matched_count}/{m.attendee_count}
+                          {m.unmatched_hourly_rate ? ` · est` : ''}
+                        </span>
+                      ) : '—'}
+                    </td>
+                    <td>{fmtDur(m.duration_seconds)}</td>
+                    <td style={{fontWeight:600,color: (m.total_cost||0) > 100 ? 'var(--danger)' : 'var(--success)'}}>{fmt(m.total_cost)}</td>
+                    <td style={{color:'var(--muted)',fontSize:12}}>{new Date(m.started_at).toLocaleString('en-GB')}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── App Shell ──────────────────────────────────────
+function App() {
+  const [auth, setAuth] = useState(() => {
+    try { return JSON.parse(sessionStorage.getItem('mcc_auth')); } catch { return null; }
+  });
+  const [page, setPage] = useState('dashboard');
+
+  const handleLogin = data => {
+    sessionStorage.setItem('mcc_auth', JSON.stringify(data));
+    setAuth(data);
+  };
+
+  const handleLogout = () => {
+    sessionStorage.removeItem('mcc_auth');
+    setAuth(null);
+  };
+
+  if (!auth) return <Login onLogin={handleLogin} />;
+
+  const nav = [
+    { id:'dashboard', icon:'📊', label:'Dashboard' },
+    { id:'staff', icon:'👥', label:'Staff & Salaries' },
+    { id:'meetings', icon:'📅', label:'Meeting History' },
+  ];
+
+  return (
+    <div className="app">
+      <div className="sidebar">
+        <div className="sidebar-logo">
+          <div style={{fontSize:20,marginBottom:6}}>💸</div>
+          <div className="logo-title">Meeting Cost</div>
+          <div className="logo-sub">Admin Dashboard</div>
+        </div>
+        <div className="sidebar-nav">
+          {nav.map(n => (
+            <div key={n.id} className={`nav-item ${page === n.id ? 'active' : ''}`} onClick={() => setPage(n.id)}>
+              <span className="nav-icon">{n.icon}</span>{n.label}
+            </div>
+          ))}
+        </div>
+        <div className="sidebar-footer">
+          <div className="nav-item" onClick={handleLogout}>
+            <span className="nav-icon">🚪</span>Sign Out
+          </div>
+        </div>
+      </div>
+      <div className="main">
+        <div className="topbar">
+          <div className="topbar-title">{nav.find(n=>n.id===page)?.label}</div>
+          <div className="topbar-user">
+            <div className="avatar">{auth.name?.[0]?.toUpperCase()}</div>
+            <span>{auth.name}</span>
+            <span className={`badge ${auth.role === 'superadmin' ? 'badge-blue' : 'badge-green'}`}>{auth.role}</span>
+          </div>
+        </div>
+        <div className="content">
+          {page === 'dashboard' && <Dashboard token={auth.access_token} />}
+          {page === 'staff' && <StaffPage token={auth.access_token} />}
+          {page === 'meetings' && <MeetingsPage token={auth.access_token} />}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>

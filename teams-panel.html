@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Meeting Cost — Teams Panel</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Inter',sans-serif;background:#0f172a;color:#e2e8f0;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:20px 16px}
+.header{text-align:center;margin-bottom:24px}
+.header-icon{font-size:28px;margin-bottom:6px}
+.header-title{font-size:16px;font-weight:700;color:#fff}
+.header-sub{font-size:12px;color:#475569;margin-top:2px}
+/* Cost display */
+.cost-display{width:100%;background:#111827;border:1px solid #1e293b;border-radius:14px;padding:24px;text-align:center;margin-bottom:16px}
+.cost-label{font-size:10px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;color:#475569;margin-bottom:10px}
+.cost-value{font-size:44px;font-weight:700;color:#22c55e;font-variant-numeric:tabular-nums;letter-spacing:-1px;line-height:1}
+.cost-value.high{color:#f59e0b}
+.cost-value.very-high{color:#ef4444}
+.cost-rate{font-size:12px;color:#475569;margin-top:8px}
+/* Timer */
+.timer{font-size:14px;font-weight:600;color:#64748b;margin-top:6px;font-variant-numeric:tabular-nums}
+/* Stats row */
+.stats-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;width:100%;margin-bottom:16px}
+.stat{background:#111827;border:1px solid #1e293b;border-radius:10px;padding:12px;text-align:center}
+.stat-label{font-size:10px;color:#475569;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:4px}
+.stat-value{font-size:18px;font-weight:700;color:#fff}
+/* Controls */
+.controls{display:flex;gap:8px;width:100%;margin-bottom:16px}
+.btn{flex:1;padding:10px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;border:none;transition:all 0.15s;font-family:inherit}
+.btn-start{background:#16a34a;color:#fff}
+.btn-start:hover{background:#15803d}
+.btn-stop{background:#1e293b;color:#94a3b8;border:1px solid #334155}
+.btn-stop:hover{background:#334155}
+.btn-end{background:#7f1d1d;color:#fca5a5;border:1px solid #991b1b}
+.btn-end:hover{background:#991b1b}
+/* Setup form */
+.setup{width:100%;background:#111827;border:1px solid #1e293b;border-radius:12px;padding:16px;margin-bottom:16px}
+.setup-title{font-size:12px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:12px}
+.input-group{margin-bottom:10px}
+.input-label{font-size:11px;color:#64748b;font-weight:600;margin-bottom:4px;display:block}
+.input{width:100%;background:#0f172a;border:1px solid #1e293b;border-radius:6px;padding:8px 10px;font-size:12px;color:#e2e8f0;outline:none;font-family:inherit}
+.input:focus{border-color:#3b82f6;box-shadow:0 0 0 2px #1e3a5f}
+/* Attendees */
+.attendee-list{margin-bottom:16px;width:100%}
+.attendee-title{font-size:11px;font-weight:600;color:#475569;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px}
+.attendee{display:flex;align-items:center;gap:8px;padding:7px 10px;background:#111827;border:1px solid #1e293b;border-radius:8px;margin-bottom:6px}
+.attendee-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.attendee-dot.matched{background:#22c55e}
+.attendee-dot.unmatched{background:#475569}
+.attendee-name{font-size:12px;color:#cbd5e1;flex:1}
+.attendee-rate{font-size:11px;color:#475569}
+/* Summary */
+.summary{background:#052e16;border:1px solid #166534;border-radius:10px;padding:14px;width:100%;text-align:center}
+.summary-title{font-size:11px;color:#4ade80;font-weight:600;margin-bottom:6px}
+.summary-cost{font-size:28px;font-weight:700;color:#22c55e}
+.summary-detail{font-size:11px;color:#166534;margin-top:4px}
+/* Status */
+.status-dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:5px}
+.status-dot.live{background:#22c55e;animation:pulse 1.5s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
+.status-text{font-size:11px;color:#475569}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-icon">💸</div>
+  <div class="header-title">Meeting Cost Tracker</div>
+  <div class="header-sub" id="statusText">Configure and start tracking</div>
+</div>
+
+<div id="setupPanel" class="setup">
+  <div class="setup-title">Meeting Setup</div>
+  <div class="input-group">
+    <label class="input-label">Your API Token</label>
+    <input class="input" id="tokenInput" type="password" placeholder="Paste your JWT token" />
+  </div>
+  <div class="input-group">
+    <label class="input-label">Attendee Emails (one per line)</label>
+    <textarea class="input" id="emailsInput" rows="4" placeholder="alice@company.com&#10;bob@company.com&#10;carol@company.com"></textarea>
+  </div>
+  <div class="input-group">
+    <label class="input-label">Meeting Title (optional)</label>
+    <input class="input" id="titleInput" placeholder="e.g. Sprint Planning" />
+  </div>
+</div>
+
+<div class="cost-display">
+  <div class="cost-label">💰 Total Meeting Cost</div>
+  <div class="cost-value" id="costDisplay">£0.00</div>
+  <div class="cost-rate" id="rateDisplay">Set up meeting to begin</div>
+  <div class="timer" id="timerDisplay">00:00</div>
+</div>
+
+<div class="stats-row">
+  <div class="stat">
+    <div class="stat-label">Per Minute</div>
+    <div class="stat-value" id="perMinDisplay">—</div>
+  </div>
+  <div class="stat">
+    <div class="stat-label">Attendees</div>
+    <div class="stat-value" id="attendeeDisplay">—</div>
+  </div>
+</div>
+
+<div class="controls" id="controls">
+  <button class="btn btn-start" onclick="startMeeting()">▶ Start Meeting</button>
+</div>
+
+<div id="attendeePanel" class="attendee-list" style="display:none"></div>
+<div id="summaryPanel" style="display:none;width:100%"></div>
+
+<script>
+const API = 'http://localhost:8000';
+let meetingId = null;
+let startTime = null;
+let elapsed = 0;
+let ratePerSec = 0;
+let interval = null;
+let running = false;
+
+function fmt(n) {
+  return '£' + Number(n).toLocaleString('en-GB', {minimumFractionDigits:2, maximumFractionDigits:2});
+}
+
+function fmtTime(s) {
+  const m = Math.floor(s / 60);
+  const sec = s % 60;
+  return `${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;
+}
+
+async function apiCall(path, opts = {}) {
+  const token = document.getElementById('tokenInput').value.trim();
+  const headers = { 'Content-Type': 'application/json' };
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  const r = await fetch(API + path, { headers, ...opts });
+  if (!r.ok) {
+    const err = await r.json().catch(() => ({ detail: 'Request failed' }));
+    throw new Error(err.detail);
+  }
+  return r.json();
+}
+
+async function startMeeting() {
+  const emailsRaw = document.getElementById('emailsInput').value.trim();
+  const title = document.getElementById('titleInput').value.trim();
+  if (!emailsRaw) return alert('Please enter at least one attendee email');
+
+  const emails = emailsRaw.split('\n').map(e => e.trim()).filter(Boolean);
+
+  try {
+    const data = await apiCall('/api/meetings/start', {
+      method: 'POST',
+      body: JSON.stringify({ attendee_emails: emails, title: title || 'Teams Meeting', organiser_email: null })
+    });
+
+    meetingId = data.meeting_id;
+    ratePerSec = data.total_hourly_rate / 3600;
+    elapsed = 0;
+    running = true;
+
+    document.getElementById('setupPanel').style.display = 'none';
+    document.getElementById('summaryPanel').style.display = 'none';
+    document.getElementById('perMinDisplay').textContent = fmt(data.total_hourly_rate / 60) + '/min';
+    document.getElementById('attendeeDisplay').textContent = `${data.matched_count}/${data.attendee_count}`;
+    document.getElementById('statusText').innerHTML = '<span class="status-dot live"></span>Live tracking';
+    document.getElementById('rateDisplay').textContent = `${data.matched_count} staff matched · ${fmt(ratePerSec * 60)}/min`;
+
+    document.getElementById('controls').innerHTML = `
+      <button class="btn btn-stop" onclick="pauseMeeting()">⏸ Pause</button>
+      <button class="btn btn-end" onclick="endMeeting()">⏹ End & Save</button>
+    `;
+
+    // Show attendees
+    const panel = document.getElementById('attendeePanel');
+    panel.style.display = 'block';
+    panel.innerHTML = `<div class="attendee-title">Attendees (${data.matched_count} matched)</div>`;
+    emails.forEach(e => {
+      const matched = !data.unmatched_emails.includes(e);
+      panel.innerHTML += `
+        <div class="attendee">
+          <div class="attendee-dot ${matched ? 'matched' : 'unmatched'}"></div>
+          <div class="attendee-name">${e}</div>
+          <div class="attendee-rate">${matched ? '✓ matched' : 'no salary'}</div>
+        </div>`;
+    });
+
+    interval = setInterval(tick, 1000);
+  } catch(e) {
+    alert('Error: ' + e.message);
+  }
+}
+
+function tick() {
+  if (!running) return;
+  elapsed++;
+  const cost = ratePerSec * elapsed;
+  const display = document.getElementById('costDisplay');
+  display.textContent = fmt(cost);
+  display.className = 'cost-value' + (cost > 500 ? ' very-high' : cost > 100 ? ' high' : '');
+  document.getElementById('timerDisplay').textContent = fmtTime(elapsed);
+}
+
+function pauseMeeting() {
+  running = !running;
+  const btn = document.querySelector('.btn-stop');
+  if (running) {
+    btn.textContent = '⏸ Pause';
+    document.getElementById('statusText').innerHTML = '<span class="status-dot live"></span>Live tracking';
+  } else {
+    btn.textContent = '▶ Resume';
+    document.getElementById('statusText').textContent = 'Paused';
+  }
+}
+
+async function endMeeting() {
+  if (!meetingId) return;
+  running = false;
+  clearInterval(interval);
+
+  try {
+    const data = await apiCall('/api/meetings/end', {
+      method: 'POST',
+      body: JSON.stringify({ meeting_id: meetingId, duration_seconds: elapsed })
+    });
+
+    document.getElementById('attendeePanel').style.display = 'none';
+    document.getElementById('controls').innerHTML = `<button class="btn btn-start" onclick="resetPanel()">+ New Meeting</button>`;
+    document.getElementById('statusText').textContent = 'Meeting ended';
+
+    const summary = document.getElementById('summaryPanel');
+    summary.style.display = 'block';
+    summary.innerHTML = `
+      <div class="summary">
+        <div class="summary-title">✅ Meeting Saved</div>
+        <div class="summary-cost">${fmt(data.total_cost)}</div>
+        <div class="summary-detail">${data.attendee_count} attendees · ${fmtTime(elapsed)} · ${data.matched_count} salary matched</div>
+      </div>`;
+  } catch(e) {
+    alert('Error saving meeting: ' + e.message);
+  }
+}
+
+function resetPanel() {
+  meetingId = null; elapsed = 0; ratePerSec = 0; running = false;
+  clearInterval(interval);
+  document.getElementById('costDisplay').textContent = '£0.00';
+  document.getElementById('timerDisplay').textContent = '00:00';
+  document.getElementById('rateDisplay').textContent = 'Set up meeting to begin';
+  document.getElementById('perMinDisplay').textContent = '—';
+  document.getElementById('attendeeDisplay').textContent = '—';
+  document.getElementById('setupPanel').style.display = 'block';
+  document.getElementById('summaryPanel').style.display = 'none';
+  document.getElementById('attendeePanel').style.display = 'none';
+  document.getElementById('statusText').textContent = 'Configure and start tracking';
+  document.getElementById('controls').innerHTML = `<button class="btn btn-start" onclick="startMeeting()">▶ Start Meeting</button>`;
+}
+</script>
+</body>
+</html>
